@@ -7,18 +7,21 @@ using InteractiveUtils
 # ╔═╡ 9976914c-9bc5-11eb-3b13-abe73dd8f7c4
 using SparseArrays, BenchmarkTools, DataFrames, Random, Plots
 
+# ╔═╡ bd3807cc-9eaf-11eb-030f-1da9d12e7488
+@eval SparseArrays include("getindex_version3.jl");
+
 # ╔═╡ a8f932f0-9c6a-11eb-3d59-fbaba6e0f95f
 md"
 # Extraction of submatrices from sparse matrices in CSC format
 "
 
-# ╔═╡ 9f8aec8c-9bd8-11eb-26ec-197ad80da9f2
+# ╔═╡ 164e5d30-9fc2-11eb-0526-b339c70cb415
 theme(:bright)
 
 # ╔═╡ a69cb3b0-9bc5-11eb-28c8-eb8af4cc451c
 begin
 	df = DataFrame()
-	df[!, "n"] = @. 2^(8:25)
+	df[!, "n"] = @. 2^(8:22)
 	df[!, "average nnz per row"] = Vector{Float64}(undef, length(df[:,1]))
 	df[!, "extraction time"] = Vector{Float64}(undef, length(df[:,1]))
 	df[!, "memory used"] = Vector{Float64}(undef, length(df[:,1]))
@@ -28,12 +31,13 @@ end;
 
 # ╔═╡ 233cec96-9bd0-11eb-0945-ab11d417df3a
 begin
-	nrow = 100
+	nrow = 10
 	k = 100
 end;
 
 # ╔═╡ 05952304-9bd0-11eb-2680-4be8ef22e8fc
 for r = 1:length(df[:,1])
+	Random.seed!(0)
 	n = df.n[r]
 	ρ = nrow/n
 	println("Running it for n = ", n)
@@ -45,13 +49,10 @@ for r = 1:length(df[:,1])
 	df[r, "extraction time"] = mean(b.times)
 	df[r, "memory used"] = b.memory
 	i = collect(100:200)
-	b = @benchmark  SparseArrays.getindex_I_sorted_bsearch_I($A, $i, $j)
+	b = @benchmark  $A[$i,$j]
 	df[r, "extraction time (sorted)"] = mean(b.times)
 	df[r, "memory used (sorted)"] = b.memory
 end
-
-# ╔═╡ 3f715068-9bd1-11eb-169b-cbad9b57fe1f
-df
 
 # ╔═╡ 7df7f0ae-9bd8-11eb-2dde-effd6140752d
 begin
@@ -59,14 +60,14 @@ begin
 	m = df[:, "average nnz per row"]
 	kest = n.*m
 	
-	plot(xaxis=:log, yaxis=:log, legend=:topleft)
+	plot(title = "A[i,j] timings for nnz(A)/n = 10", xaxis=("problem size n", :log), yaxis=("timings in μs", :log), legend=:topleft)
 	
 	plot!(n, df[:,"extraction time"], marker=true, label="extraction time")
-	plot!(n, df[:,"memory used"], marker=true, label="memory usage")
+	#plot!(n, df[:,"memory used"], marker=true, label="memory usage")
 	plot!(n, df[:,"extraction time (sorted)"], marker=true, label="extraction time (sorted)")
-	plot!(n, df[:,"memory used (sorted)"], marker=true, label="memory usage (sorted)")
+	#plot!(n, df[:,"memory used (sorted)"], marker=true, label="memory usage (sorted)")
 	
-	plot!(n,10*n)
+	plot!(n,n,label="O(n)")
 end
 
 # ╔═╡ 5acbe6ee-9c89-11eb-184f-03356faa27ba
@@ -87,11 +88,11 @@ end
 # ╔═╡ Cell order:
 # ╟─a8f932f0-9c6a-11eb-3d59-fbaba6e0f95f
 # ╠═9976914c-9bc5-11eb-3b13-abe73dd8f7c4
-# ╠═9f8aec8c-9bd8-11eb-26ec-197ad80da9f2
+# ╠═bd3807cc-9eaf-11eb-030f-1da9d12e7488
+# ╠═164e5d30-9fc2-11eb-0526-b339c70cb415
 # ╠═a69cb3b0-9bc5-11eb-28c8-eb8af4cc451c
 # ╠═233cec96-9bd0-11eb-0945-ab11d417df3a
 # ╠═05952304-9bd0-11eb-2680-4be8ef22e8fc
-# ╠═3f715068-9bd1-11eb-169b-cbad9b57fe1f
 # ╠═7df7f0ae-9bd8-11eb-2dde-effd6140752d
 # ╠═5acbe6ee-9c89-11eb-184f-03356faa27ba
 # ╠═e1b01fec-9caa-11eb-353c-e52aeba86885
